@@ -7,7 +7,7 @@ import me.kenzierocks.visisort.algo.BubbleSort;
 public class BubbleSortTester extends AbstractSortTester {
 
     @Test
-    public void testBubbleSort() throws Exception {
+    public void testSorts() throws Exception {
         assertSorts(BubbleSort::new);
     }
 

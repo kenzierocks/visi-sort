@@ -3,8 +3,8 @@ package me.kenzierocks.visisort.op;
 import java.util.Arrays;
 import java.util.List;
 
-import me.kenzierocks.visisort.Result;
 import me.kenzierocks.visisort.SortOp;
+import me.kenzierocks.visisort.VisiArray;
 
 public class Slice implements SortOp {
 
@@ -19,11 +19,14 @@ public class Slice implements SortOp {
     }
 
     @Override
-    public Result process(List<int[]> arrays) {
-        int[] data = arrays.get(array);
-        data = Arrays.copyOfRange(data, from, to);
-        arrays.add(data);
-        return Result.of(arrays.size() - 1);
+    public VisiArray process(List<VisiArray> arrays) {
+        VisiArray source = arrays.get(array);
+        int[] data = Arrays.copyOfRange(source.getData(), from, to);
+        int id = arrays.size();
+        int parent = source.getId();
+        VisiArray ret = new VisiArray(id, parent, source.getLevel() + 1, data, from, source.getCoRo());
+        arrays.add(ret);
+        return ret;
     }
 
     @Override

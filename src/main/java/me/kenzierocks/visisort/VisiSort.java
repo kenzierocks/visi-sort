@@ -1,10 +1,13 @@
 package me.kenzierocks.visisort;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.IntStream;
 
 import com.flowpowered.math.vector.Vector2d;
 import com.flowpowered.math.vector.Vector2i;
+import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.eventbus.Subscribe;
 import com.techshroom.unplanned.blitter.GraphicsContext;
@@ -12,14 +15,16 @@ import com.techshroom.unplanned.blitter.pen.DigitalPen;
 import com.techshroom.unplanned.blitter.pen.PenInk;
 import com.techshroom.unplanned.core.util.Color;
 import com.techshroom.unplanned.core.util.Sync;
+import com.techshroom.unplanned.event.keyboard.KeyState;
+import com.techshroom.unplanned.event.keyboard.KeyStateEvent;
 import com.techshroom.unplanned.event.window.WindowResizeEvent;
+import com.techshroom.unplanned.input.Key;
 import com.techshroom.unplanned.window.Window;
 import com.techshroom.unplanned.window.WindowSettings;
 
 import me.kenzierocks.visisort.op.Compare;
 import me.kenzierocks.visisort.op.Finish;
 import me.kenzierocks.visisort.op.Get;
-import me.kenzierocks.visisort.op.NewArray;
 import me.kenzierocks.visisort.op.Set;
 import me.kenzierocks.visisort.op.Slice;
 import me.kenzierocks.visisort.op.Swap;
@@ -36,7 +41,7 @@ public class VisiSort {
         window = WindowSettings.builder()
                 .title("VisiSort - " + algo.getName())
                 .msaa(true)
-                .screenSize(320, 200)
+                .maximized(true)
                 .build().createWindow();
         window.getEventBus().register(this);
         this.algo = algo;
@@ -55,6 +60,7 @@ public class VisiSort {
         Sync sync = new Sync();
         boolean running = true;
 
+        runner.start();
         while (!window.isCloseRequested()) {
             sync.sync(60);
             ctx.clearGraphicsState();
@@ -78,21 +84,50 @@ public class VisiSort {
     public void onResize(WindowResizeEvent event) {
         scale = event.getSize().toDouble().div(SIZE.toDouble());
     }
+    
+    @Subscribe
+    public void onKey(KeyStateEvent event) {
+        if (event.is(Key.ESCAPE, KeyState.RELEASED)) {
+            window.setCloseRequested(true);
+        }
+    }
 
     private static final int BORDER_X = 5;
     private static final int BORDER_Y = 5;
     private static final int SEPARATION_X = 2;
 
-    private void drawArray(List<int[]> arrays) {
-        float arrayHeight = SIZE.getY() / (float) arrays.size();
-        for (int i = 0; i < arrays.size(); i++) {
-            drawArray(arrayHeight, arrayHeight * i, arrays.get(i));
+    private void drawArray(List<VisiArray> arrays) {
+        DigitalPen pen = window.getGraphicsContext().getPen();
+        PenInk redInk = pen.getInk(Color.RED);
+        ImmutableListMultimap<Integer, VisiArray> byLevel = collectByLevel(arrays);
+        int size = arrays.get(0).getSize();
+        float arrayHeight = (SIZE.getY() - BORDER_Y * 2) / (float) byLevel.keySet().size();
+        for (int i : byLevel.keySet()) {
+            // sort the level by parent, then offset, and collect to int[]
+            int[] level = byLevel.get(i).stream()
+                    .sorted(Comparator.comparingInt(VisiArray::getParent)
+                            .thenComparingInt(VisiArray::getOffset))
+                    .map(VisiArray::getData)
+                    .flatMapToInt(IntStream::of)
+                    .toArray();
+            drawLevel(arrayHeight, (arrayHeight + 1) * i, size, level);
+            pen.fill(redInk, () -> {
+                pen.rect(0, (arrayHeight + 1) * i - 1, SIZE.getX(), 1);
+            });
         }
     }
 
-    private void drawArray(float allocatedHeight, float offsetY, int[] array) {
-        float barWidth = (SIZE.getX() - BORDER_X * 2 - SEPARATION_X * array.length) / (float) array.length;
-        float barHeight = (allocatedHeight - BORDER_Y * 2) / (float) array.length;
+    private ImmutableListMultimap<Integer, VisiArray> collectByLevel(List<VisiArray> arrays) {
+        ImmutableListMultimap.Builder<Integer, VisiArray> levels = ImmutableListMultimap.builder();
+        for (VisiArray array : arrays) {
+            levels.put(array.getLevel(), array);
+        }
+        return levels.build();
+    }
+
+    private void drawLevel(float allocatedHeight, float offsetY, int size, int[] array) {
+        float barWidth = (SIZE.getX() - BORDER_X * 2 - SEPARATION_X * size) / (float) size;
+        float barHeight = (allocatedHeight) / (float) size;
         // assume array represents colors
         DigitalPen pen = window.getGraphicsContext().getPen();
         for (int i = 0; i < array.length; i++) {
@@ -118,8 +153,6 @@ public class VisiSort {
             .put(Finish.class, (pen, op) -> {
             })
             .put(Get.class, (pen, op) -> {
-            })
-            .put(NewArray.class, (pen, op) -> {
             })
             .put(Set.class, (pen, op) -> {
             })

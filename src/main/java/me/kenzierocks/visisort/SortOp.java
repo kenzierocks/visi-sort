@@ -4,6 +4,6 @@ import java.util.List;
 
 public interface SortOp {
 
-    Result process(List<int[]> arrays);
+    Object process(List<VisiArray> arrays);
 
 }

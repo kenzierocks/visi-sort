@@ -55,6 +55,7 @@ public abstract class AbstractSortTester {
         });
         long start = System.nanoTime();
         long end = start + MAX_RUNTIME;
+        runner.start();
         while (runner.pulse()) {
             if (DEBUG) {
                 System.err.println(fullId + ",array=" + Arrays.toString(output));

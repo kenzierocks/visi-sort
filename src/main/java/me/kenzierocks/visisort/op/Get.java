@@ -2,8 +2,8 @@ package me.kenzierocks.visisort.op;
 
 import java.util.List;
 
-import me.kenzierocks.visisort.Result;
 import me.kenzierocks.visisort.SortOp;
+import me.kenzierocks.visisort.VisiArray;
 
 public class Get implements SortOp {
 
@@ -16,9 +16,9 @@ public class Get implements SortOp {
     }
 
     @Override
-    public Result process(List<int[]> arrays) {
-        int[] data = arrays.get(array);
-        return Result.of(data[index]);
+    public Integer process(List<VisiArray> arrays) {
+        int[] data = arrays.get(array).getData();
+        return data[index];
     }
 
     @Override

@@ -10,7 +10,7 @@ public class Main {
     }
 
     private static int[] getVisiData() {
-        int len = 10;
+        int len = 100;
         int[] array = new int[len];
         for (int i = 0; i < array.length; i++) {
             array[i] = i;
