@@ -1,16 +1,16 @@
 package me.kenzierocks.visisort;
 
-import me.kenzierocks.visisort.algo.BogoSort;
+import me.kenzierocks.visisort.algo.QuickSort;
 
 public class Main {
 
     public static void main(String[] args) {
-        VisiSort visi = new VisiSort(new BogoSort());
+        VisiSort visi = new VisiSort(new QuickSort());
         visi.run(getVisiData());
     }
 
     private static int[] getVisiData() {
-        int len = 100;
+        int len = 8192;
         int[] array = new int[len];
         for (int i = 0; i < array.length; i++) {
             array[i] = i;
