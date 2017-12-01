@@ -4,11 +4,19 @@ import me.kenzierocks.visisort.SortAlgo;
 import me.kenzierocks.visisort.VisiArray;
 import me.kenzierocks.visisort.op.UncheckedFuture;
 
-public class QuickSort implements SortAlgo {
+public class QuickSortWithThresholdSwap implements SortAlgo {
+
+    private final SortAlgo delegate;
+    private final int threshold;
+
+    public QuickSortWithThresholdSwap(SortAlgo delegate, int threshold) {
+        this.delegate = delegate;
+        this.threshold = threshold;
+    }
 
     @Override
     public String getName() {
-        return "Quick Sort";
+        return "Quick Sort, switching to '" + delegate.getName() + "'@" + threshold + " elements";
     }
 
     @Override
@@ -18,6 +26,14 @@ public class QuickSort implements SortAlgo {
 
     private void quicksort(VisiArray A, int lo, int hi) {
         if (lo < hi) {
+            if (hi - lo <= threshold) {
+                VisiArray data = A.slice(lo, hi + 1);
+                delegate.sort(data);
+                for (int i = 0; i < data.getSize(); i++) {
+                    A.set(i + lo, data.get(i));
+                }
+                return;
+            }
             int p = partition(A, lo, hi);
             UncheckedFuture<Void> l = A.fork(a -> quicksort(a, lo, p - 1));
             UncheckedFuture<Void> r = A.fork(a -> quicksort(a, p + 1, hi));

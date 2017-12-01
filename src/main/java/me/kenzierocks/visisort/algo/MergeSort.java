@@ -15,8 +15,10 @@ public class MergeSort implements SortAlgo {
             data = array;
             if (array.getSize() > 1) {
                 int leftAmt = array.getSize() / 2;
-                this.left = new MergeArray(array.slice(0, leftAmt));
-                this.right = new MergeArray(array.slice(leftAmt, array.getSize()));
+                VisiArray leftSlice = array.slice(0, leftAmt);
+                VisiArray rightSlice = array.slice(leftAmt, array.getSize());
+                this.left = new MergeArray(leftSlice);
+                this.right = new MergeArray(rightSlice);
             } else {
                 left = right = null;
             }

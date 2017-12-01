@@ -1,18 +1,16 @@
 package me.kenzierocks.visisort.op;
 
-import java.util.List;
-
 import me.kenzierocks.visisort.SortOp;
 import me.kenzierocks.visisort.VisiArray;
 
 public class Compare implements SortOp {
 
-    public final int arrayA;
+    public final VisiArray arrayA;
     public final int a;
-    public final int arrayB;
+    public final VisiArray arrayB;
     public final int b;
 
-    public Compare(int arrayA, int a, int arrayB, int b) {
+    public Compare(VisiArray arrayA, int a, VisiArray arrayB, int b) {
         this.arrayA = arrayA;
         this.a = a;
         this.arrayB = arrayB;
@@ -20,8 +18,8 @@ public class Compare implements SortOp {
     }
 
     @Override
-    public Integer process(List<VisiArray> arrays) {
-        return Integer.compare(arrays.get(arrayA).getData()[a], arrays.get(arrayB).getData()[b]);
+    public Integer process() {
+        return Integer.compare(arrayA.getData()[a], arrayB.getData()[b]);
     }
 
     @Override

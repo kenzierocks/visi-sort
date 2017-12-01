@@ -1,9 +1,7 @@
 package me.kenzierocks.visisort;
 
-import java.util.List;
+public interface SortOp extends Op {
 
-public interface SortOp {
-
-    Object process(List<VisiArray> arrays);
+    Object process();
 
 }

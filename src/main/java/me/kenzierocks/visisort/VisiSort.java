@@ -1,9 +1,7 @@
 package me.kenzierocks.visisort;
 
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.IntStream;
 
 import com.flowpowered.math.vector.Vector2d;
 import com.flowpowered.math.vector.Vector2i;
@@ -84,7 +82,7 @@ public class VisiSort {
     public void onResize(WindowResizeEvent event) {
         scale = event.getSize().toDouble().div(SIZE.toDouble());
     }
-    
+
     @Subscribe
     public void onKey(KeyStateEvent event) {
         if (event.is(Key.ESCAPE, KeyState.RELEASED)) {
@@ -103,13 +101,10 @@ public class VisiSort {
         int size = arrays.get(0).getSize();
         float arrayHeight = (SIZE.getY() - BORDER_Y * 2) / (float) byLevel.keySet().size();
         for (int i : byLevel.keySet()) {
-            // sort the level by parent, then offset, and collect to int[]
-            int[] level = byLevel.get(i).stream()
-                    .sorted(Comparator.comparingInt(VisiArray::getParent)
-                            .thenComparingInt(VisiArray::getOffset))
-                    .map(VisiArray::getData)
-                    .flatMapToInt(IntStream::of)
-                    .toArray();
+            int[] level = new int[size];
+            for (VisiArray va : byLevel.get(i)) {
+                System.arraycopy(va.getData(), 0, level, va.getOffset(), va.getSize());
+            }
             drawLevel(arrayHeight, (arrayHeight + 1) * i, size, level);
             pen.fill(redInk, () -> {
                 pen.rect(0, (arrayHeight + 1) * i - 1, SIZE.getX(), 1);

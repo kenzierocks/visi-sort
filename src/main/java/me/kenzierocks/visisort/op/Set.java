@@ -1,25 +1,23 @@
 package me.kenzierocks.visisort.op;
 
-import java.util.List;
-
 import me.kenzierocks.visisort.SortOp;
 import me.kenzierocks.visisort.VisiArray;
 
 public class Set implements SortOp {
 
-    public final int array;
+    public final VisiArray array;
     public final int index;
     public final int value;
 
-    public Set(int array, int index, int value) {
+    public Set(VisiArray array, int index, int value) {
         this.array = array;
         this.index = index;
         this.value = value;
     }
 
     @Override
-    public Void process(List<VisiArray> arrays) {
-        int[] data = arrays.get(array).getData();
+    public Void process() {
+        int[] data = array.getData();
         data[index] = value;
         return null;
     }

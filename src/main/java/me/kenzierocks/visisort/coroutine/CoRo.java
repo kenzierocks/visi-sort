@@ -2,10 +2,12 @@ package me.kenzierocks.visisort.coroutine;
 
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
  * Support for coroutine-like actions. Given to instances of {@link CoRoutine}
@@ -18,6 +20,8 @@ import java.util.function.Function;
  */
 public class CoRo<I, O> implements Producer<I, O>, CoRoIterator<I, O> {
 
+    private final String id = UUID.randomUUID().toString();
+
     private final Lock coroutineTransferLock = new ReentrantLock();
     private final Condition condTransI = coroutineTransferLock.newCondition();
     private final Condition condTransO = coroutineTransferLock.newCondition();
@@ -25,17 +29,30 @@ public class CoRo<I, O> implements Producer<I, O>, CoRoIterator<I, O> {
     private Optional<O> transO;
     private boolean complete = false;
 
+    private void inLock(Runnable action) {
+        inLock(() -> {
+            action.run();
+            return null;
+        });
+    }
+
+    private <T> T inLock(Supplier<T> action) {
+        coroutineTransferLock.lock();
+        try {
+            return action.get();
+        } finally {
+            coroutineTransferLock.unlock();
+        }
+    }
+
     /**
      * Call this to complete the coroutine.
      */
     public void complete() {
-        coroutineTransferLock.lock();
-        try {
+        inLock(() -> {
             complete = true;
             condTransI.signal();
-        } finally {
-            coroutineTransferLock.unlock();
-        }
+        });
     }
 
     /**
@@ -44,8 +61,7 @@ public class CoRo<I, O> implements Producer<I, O>, CoRoIterator<I, O> {
      */
     @Override
     public O yield(I value) {
-        coroutineTransferLock.lock();
-        try {
+        return inLock(() -> {
             transI = Optional.ofNullable(value);
             condTransI.signal();
             while (transO == null) {
@@ -54,19 +70,12 @@ public class CoRo<I, O> implements Producer<I, O>, CoRoIterator<I, O> {
             Optional<O> val = transO;
             transO = null;
             return val.orElse(null);
-        } finally {
-            coroutineTransferLock.unlock();
-        }
+        });
     }
 
     @Override
     public boolean hasNext() {
-        coroutineTransferLock.lock();
-        try {
-            return awaitTransIOrComplete();
-        } finally {
-            coroutineTransferLock.unlock();
-        }
+        return inLock(this::awaitTransIOrComplete);
     }
 
     /**
@@ -77,8 +86,7 @@ public class CoRo<I, O> implements Producer<I, O>, CoRoIterator<I, O> {
      */
     @Override
     public void processNext(Function<I, O> function) {
-        coroutineTransferLock.lock();
-        try {
+        inLock(() -> {
             if (!awaitTransIOrComplete()) {
                 throw new NoSuchElementException("End of coroutine reached.");
             }
@@ -87,9 +95,7 @@ public class CoRo<I, O> implements Producer<I, O>, CoRoIterator<I, O> {
             O out = function.apply(val.orElse(null));
             transO = Optional.ofNullable(out);
             condTransO.signal();
-        } finally {
-            coroutineTransferLock.unlock();
-        }
+        });
     }
 
     // following functions assume lock is held
