@@ -36,6 +36,7 @@ def addLWJGL(project, ext, natives) {
 }
 version = rootProject.version
 
+apply plugin: 'application'
 apply plugin: 'java'
 apply plugin: 'eclipse'
 apply plugin: 'aversion-util'
@@ -107,6 +108,8 @@ dependencies {
 
     compile group: 'com.flowpowered', name: 'flow-math', version: '1.0.3'
 
+    compile group: 'org.biojava', name: 'jcolorbrewer', version: '5.2'
+
     addAPTReqWComp group: 'com.google.guava', name: 'guava', version: '23.0'
     addAPT group: 'com.google.auto.service', name: 'auto-service', version: '1.0-rc3'
     addAPT group: 'com.google.auto.value', name: 'auto-value', version: '1.5.2'
@@ -136,3 +139,5 @@ configure([compileJava, compileTestJava]) {
     options.incremental = true
     options.fork = true
 }
+
+mainClassName = "me.kenzierocks.visisort.Main"

@@ -1,7 +1,28 @@
+/*
+ * This file is part of visi-sort, licensed under the MIT License (MIT).
+ *
+ * Copyright (c) TechShroom Studios <https://techshroom.com>
+ * Copyright (c) contributors
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
 package me.kenzierocks.visisort;
-
-import java.util.List;
-import java.util.Map;
 
 import com.flowpowered.math.vector.Vector2d;
 import com.flowpowered.math.vector.Vector2i;
@@ -10,7 +31,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.eventbus.Subscribe;
 import com.techshroom.unplanned.blitter.GraphicsContext;
 import com.techshroom.unplanned.blitter.pen.DigitalPen;
-import com.techshroom.unplanned.blitter.pen.PenInk;
 import com.techshroom.unplanned.core.util.Color;
 import com.techshroom.unplanned.core.util.Sync;
 import com.techshroom.unplanned.event.keyboard.KeyState;
@@ -19,13 +39,18 @@ import com.techshroom.unplanned.event.window.WindowResizeEvent;
 import com.techshroom.unplanned.input.Key;
 import com.techshroom.unplanned.window.Window;
 import com.techshroom.unplanned.window.WindowSettings;
-
 import me.kenzierocks.visisort.op.Compare;
 import me.kenzierocks.visisort.op.Finish;
 import me.kenzierocks.visisort.op.Get;
 import me.kenzierocks.visisort.op.Set;
 import me.kenzierocks.visisort.op.Slice;
 import me.kenzierocks.visisort.op.Swap;
+import org.jcolorbrewer.ColorBrewer;
+
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class VisiSort {
 
@@ -39,7 +64,6 @@ public class VisiSort {
         window = WindowSettings.builder()
                 .title("VisiSort - " + algo.getName())
                 .msaa(true)
-                .maximized(true)
                 .build().createWindow();
         window.getEventBus().register(this);
         this.algo = algo;
@@ -96,7 +120,7 @@ public class VisiSort {
 
     private void drawArray(List<VisiArray> arrays) {
         DigitalPen pen = window.getGraphicsContext().getPen();
-        PenInk redInk = pen.getInk(Color.RED);
+        pen.setColor(Color.RED);
         ImmutableListMultimap<Integer, VisiArray> byLevel = collectByLevel(arrays);
         int size = arrays.get(0).getSize();
         float arrayHeight = (SIZE.getY() - BORDER_Y * 2) / (float) byLevel.keySet().size();
@@ -106,7 +130,7 @@ public class VisiSort {
                 System.arraycopy(va.getData(), 0, level, va.getOffset(), va.getSize());
             }
             drawLevel(arrayHeight, (arrayHeight + 1) * i, size, level);
-            pen.fill(redInk, () -> {
+            pen.fill(() -> {
                 pen.rect(0, (arrayHeight + 1) * i - 1, SIZE.getX(), 1);
             });
         }
@@ -120,6 +144,10 @@ public class VisiSort {
         return levels.build();
     }
 
+    private static final List<Color> COLORS = Stream.of(ColorBrewer.Set3.getColorPalette(12))
+        .map(c -> Color.fromInt(c.getRed(), c.getGreen(), c.getBlue(), c.getAlpha()))
+        .collect(Collectors.toList());
+
     private void drawLevel(float allocatedHeight, float offsetY, int size, int[] array) {
         float barWidth = (SIZE.getX() - BORDER_X * 2 - SEPARATION_X * size) / (float) size;
         float barHeight = (allocatedHeight) / (float) size;
@@ -127,8 +155,8 @@ public class VisiSort {
         DigitalPen pen = window.getGraphicsContext().getPen();
         for (int i = 0; i < array.length; i++) {
             int barIndex = i;
-            PenInk ink = pen.getInk(Color.hashed(array[i]));
-            pen.fill(ink, () -> {
+            pen.setColor(COLORS.get(barIndex % COLORS.size()));
+            pen.fill(() -> {
                 float x = BORDER_X + (SEPARATION_X + barWidth) * barIndex;
                 float y = (allocatedHeight + offsetY) - barHeight - (BORDER_Y + barHeight * array[barIndex]);
                 pen.rect(x, y, barWidth, barHeight);
