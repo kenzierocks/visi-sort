@@ -35,6 +35,7 @@ import joptsimple.ValueConverter;
 import me.kenzierocks.visisort.algo.BogoSort;
 import me.kenzierocks.visisort.algo.BubbleSort;
 import me.kenzierocks.visisort.algo.InsertionSort;
+import me.kenzierocks.visisort.algo.MergeSort;
 import me.kenzierocks.visisort.algo.ParallelMergeSort;
 import me.kenzierocks.visisort.algo.ParallelMergeSortWithThresholdSwap;
 import me.kenzierocks.visisort.algo.QuickSort;
@@ -51,6 +52,7 @@ public class Main {
     private static final ValueConverter<SortAlgo> SORT_ALGO_CONVERTER = new ValueConverter<SortAlgo>() {
 
         private final Map<String, SortAlgo> algoMap = ImmutableSortedMap.<String, SortAlgo>naturalOrder()
+            .put("merge", new MergeSort())
             .put("parallel-merge", new ParallelMergeSort())
             .put("quick-sort", new QuickSort())
             .put("bogo", new BogoSort())
@@ -165,10 +167,10 @@ public class Main {
         visi.run(getVisiData(DATA_LENGTH.value(opts)));
     }
 
-    private static int[] getVisiData(int len) {
-        int[] array = new int[len];
+    private static Data[] getVisiData(int len) {
+        Data[] array = new Data[len];
         for (int i = 0; i < array.length; i++) {
-            array[i] = i;
+            array[i] = Data.from(i, i);
         }
         Util.shuffle(array);
         return array;

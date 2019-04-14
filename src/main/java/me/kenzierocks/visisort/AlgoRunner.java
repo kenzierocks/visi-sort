@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 
 import me.kenzierocks.visisort.coroutine.CoRoIterator;
@@ -41,14 +42,14 @@ public class AlgoRunner {
 
     private static final int OPS_PER_TICK = 1;
 
-    private final int[] initalData;
-    private final List<VisiArray> arrays = new ArrayList<>();
+    private final Data[] initialData;
+    private final List<VisiArray> arrays = new CopyOnWriteArrayList<>();
     private final SortAlgo algo;
     private final Consumer<SortOp> hook;
     private final List<CoRoIterator<Op, Object>> iterators = new ArrayList<>();
 
-    public AlgoRunner(int[] data, SortAlgo algo, Consumer<SortOp> hook) {
-        this.initalData = data;
+    public AlgoRunner(Data[] data, SortAlgo algo, Consumer<SortOp> hook) {
+        this.initialData = data;
         this.algo = algo;
         this.hook = hook;
     }
@@ -59,7 +60,7 @@ public class AlgoRunner {
 
     public void start() {
         iterators.add(CoRoutines.startCoRoutine((prod) -> {
-            arrays.add(new VisiArray(0, 0, 0, initalData, 0, prod));
+            arrays.add(new VisiArray(0, 0, 0, initialData, 0, prod));
             algo.sort(arrays.get(0));
         }));
     }
@@ -84,7 +85,7 @@ public class AlgoRunner {
                     } else if (nextOp instanceof Slice) {
                         Slice sliceOp = (Slice) nextOp;
                         VisiArray source = sliceOp.array;
-                        int[] data = Arrays.copyOfRange(source.getData(), sliceOp.from, sliceOp.to);
+                        Data[] data = Arrays.copyOfRange(source.getData(), sliceOp.from, sliceOp.to);
                         int id = arrays.size();
                         int parent = source.getId();
                         VisiArray ret = new VisiArray(id, parent, source.getLevel() + 1, data, source.getOffset() + sliceOp.from, source.getCoRo());

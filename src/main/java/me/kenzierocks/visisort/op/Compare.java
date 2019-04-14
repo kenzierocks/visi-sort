@@ -43,7 +43,7 @@ public class Compare implements SortOp {
 
     @Override
     public Integer process() {
-        return Integer.compare(arrayA.getData()[a], arrayB.getData()[b]);
+        return Integer.compare(arrayA.getData()[a].value(), arrayB.getData()[b].value());
     }
 
     @Override

@@ -24,6 +24,7 @@
  */
 package me.kenzierocks.visisort.algo;
 
+import me.kenzierocks.visisort.Data;
 import me.kenzierocks.visisort.SortAlgo;
 import me.kenzierocks.visisort.Util;
 import me.kenzierocks.visisort.VisiArray;
@@ -37,7 +38,7 @@ public class BogoSort implements SortAlgo {
 
     @Override
     public void sort(VisiArray array) {
-        int[] data = gatherData(array);
+        Data[] data = gatherData(array);
         main: while (true) {
             Util.shuffle(data);
             for (int i = 0; i < data.length; i++) {
@@ -52,8 +53,8 @@ public class BogoSort implements SortAlgo {
         }
     }
 
-    private int[] gatherData(VisiArray array) {
-        int[] data = new int[array.getSize()];
+    private Data[] gatherData(VisiArray array) {
+        Data[] data = new Data[array.getSize()];
         for (int i = 0; i < data.length; i++) {
             data[i] = array.get(i);
         }

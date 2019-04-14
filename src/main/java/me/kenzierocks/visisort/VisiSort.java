@@ -49,8 +49,12 @@ import org.jcolorbrewer.ColorBrewer;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static org.lwjgl.glfw.GLFW.glfwSetWindowRefreshCallback;
 
 public class VisiSort {
 
@@ -59,6 +63,7 @@ public class VisiSort {
     private final Window window;
     private final SortAlgo algo;
     private Vector2d scale;
+    private volatile boolean needsRedraw = false;
 
     public VisiSort(SortAlgo algo) {
         window = WindowSettings.builder()
@@ -69,20 +74,25 @@ public class VisiSort {
         this.algo = algo;
     }
 
-    public void run(int[] data) {
+    public void run(Data[] data) {
         GraphicsContext ctx = window.getGraphicsContext();
         ctx.makeActiveContext();
         window.setVsyncOn(true);
         window.setVisible(true);
         Vector2i size = window.getSize();
         window.getEventBus().post(WindowResizeEvent.create(window, size.getX(), size.getY()));
+        glfwSetWindowRefreshCallback(window.getWindowPointer(), (win) -> {
+            needsRedraw = true;
+        });
 
         AlgoRunner runner = new AlgoRunner(data, algo, this::drawOperation);
 
         Sync sync = new Sync();
-        boolean running = true;
+        boolean running = false;
 
         runner.start();
+        // wait a bit, for everything to init
+        long startTime = System.nanoTime() + TimeUnit.SECONDS.toNanos(1);
         while (!window.isCloseRequested()) {
             sync.sync(60);
             ctx.clearGraphicsState();
@@ -92,11 +102,27 @@ public class VisiSort {
             ctx.getPen().scale(scale);
             drawArray(runner.getArrays());
             if (running) {
-                running &= runner.pulse();
+                running = runner.pulse();
+                if (!running) {
+                    startTime = Long.MAX_VALUE;
+                }
             }
             ctx.getPen().cap();
 
             ctx.swapBuffers();
+            needsRedraw = false;
+
+            if (!running) {
+                // save frames
+                while (!window.isCloseRequested() && !needsRedraw) {
+                    sync.sync(60);
+                    window.processEvents();
+                    if (startTime <= System.nanoTime()) {
+                        running = true;
+                        needsRedraw = true;
+                    }
+                }
+            }
         }
 
         window.setVisible(false);
@@ -105,6 +131,7 @@ public class VisiSort {
     @Subscribe
     public void onResize(WindowResizeEvent event) {
         scale = event.getSize().toDouble().div(SIZE.toDouble());
+        needsRedraw = true;
     }
 
     @Subscribe
@@ -119,13 +146,16 @@ public class VisiSort {
     private static final int SEPARATION_X = 2;
 
     private void drawArray(List<VisiArray> arrays) {
+        if (arrays.isEmpty()) {
+            return;
+        }
         DigitalPen pen = window.getGraphicsContext().getPen();
         pen.setColor(Color.RED);
         ImmutableListMultimap<Integer, VisiArray> byLevel = collectByLevel(arrays);
         int size = arrays.get(0).getSize();
         float arrayHeight = (SIZE.getY() - BORDER_Y * 2) / (float) byLevel.keySet().size();
         for (int i : byLevel.keySet()) {
-            int[] level = new int[size];
+            Data[] level = new Data[size];
             for (VisiArray va : byLevel.get(i)) {
                 System.arraycopy(va.getData(), 0, level, va.getOffset(), va.getSize());
             }
@@ -148,17 +178,21 @@ public class VisiSort {
         .map(c -> Color.fromInt(c.getRed(), c.getGreen(), c.getBlue(), c.getAlpha()))
         .collect(Collectors.toList());
 
-    private void drawLevel(float allocatedHeight, float offsetY, int size, int[] array) {
+    private void drawLevel(float allocatedHeight, float offsetY, int size, Data[] array) {
         float barWidth = (SIZE.getX() - BORDER_X * 2 - SEPARATION_X * size) / (float) size;
         float barHeight = (allocatedHeight) / (float) size;
         // assume array represents colors
         DigitalPen pen = window.getGraphicsContext().getPen();
         for (int i = 0; i < array.length; i++) {
             int barIndex = i;
-            pen.setColor(COLORS.get(barIndex % COLORS.size()));
+            Data data = array[barIndex];
+            if (data == null) {
+                continue;
+            }
+            pen.setColor(COLORS.get(data.originalIndex() % COLORS.size()));
             pen.fill(() -> {
                 float x = BORDER_X + (SEPARATION_X + barWidth) * barIndex;
-                float y = (allocatedHeight + offsetY) - barHeight - (BORDER_Y + barHeight * array[barIndex]);
+                float y = (allocatedHeight + offsetY) - barHeight - (BORDER_Y + barHeight * data.value());
                 pen.rect(x, y, barWidth, barHeight);
             });
         }

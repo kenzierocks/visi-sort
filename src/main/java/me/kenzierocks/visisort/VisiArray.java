@@ -42,11 +42,11 @@ public class VisiArray {
     private final int id;
     private final int parent;
     private final int level;
-    private final int[] data;
+    private final Data[] data;
     private final int offset;
     private final Producer<Op, Object> coRo;
 
-    public VisiArray(int id, int parent, int level, int[] data, int offset, Producer<Op, Object> coRo) {
+    public VisiArray(int id, int parent, int level, Data[] data, int offset, Producer<Op, Object> coRo) {
         this.id = id;
         this.parent = parent;
         this.level = level;
@@ -82,15 +82,15 @@ public class VisiArray {
     /**
      * Only for display purposes, do not access directly in algorithms.
      */
-    public int[] getData() {
+    public Data[] getData() {
         return data;
     }
 
-    public int get(int index) {
-        return (int) coRo.yield(new Get(this, index));
+    public Data get(int index) {
+        return (Data) coRo.yield(new Get(this, index));
     }
 
-    public void set(int index, int value) {
+    public void set(int index, Data value) {
         coRo.yield(new Set(this, index, value));
     }
 

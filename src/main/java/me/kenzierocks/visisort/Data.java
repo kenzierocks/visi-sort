@@ -22,36 +22,27 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package me.kenzierocks.visisort.op;
+package me.kenzierocks.visisort;
 
-import me.kenzierocks.visisort.Data;
-import me.kenzierocks.visisort.SortOp;
-import me.kenzierocks.visisort.VisiArray;
+import com.google.auto.value.AutoValue;
 
-public class Swap implements SortOp {
+@AutoValue
+public abstract class Data implements Comparable<Data> {
 
-    public final VisiArray array;
-    public final int a;
-    public final int b;
+    public static Data from(int value, int originalIndex) {
+        return new AutoValue_Data(value, originalIndex);
+    }
 
-    public Swap(VisiArray array, int a, int b) {
-        this.array = array;
-        this.a = a;
-        this.b = b;
+    Data() {
     }
 
     @Override
-    public Void process() {
-        Data[] data = array.getData();
-        Data swp = data[a];
-        data[a] = data[b];
-        data[b] = swp;
-        return null;
+    public int compareTo(Data o) {
+        return Integer.compare(value(), o.value());
     }
 
-    @Override
-    public String toString() {
-        return "swap(arrays[" + array + "][" + a + "], arrays[" + array + "][" + b + "])";
-    }
+    public abstract int value();
+
+    public abstract int originalIndex();
 
 }

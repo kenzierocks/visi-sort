@@ -24,6 +24,7 @@
  */
 package me.kenzierocks.visisort;
 
+import static com.google.common.collect.Streams.mapWithIndex;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.fail;
 
@@ -31,6 +32,8 @@ import java.util.Arrays;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 public abstract class AbstractSortTester {
 
@@ -55,6 +58,11 @@ public abstract class AbstractSortTester {
         assertSorts("length 0 data", algo.get(), EMPTY_DATA);
     }
 
+    private static Data[] index(int[] data) {
+        return mapWithIndex(IntStream.of(data).boxed(), (x, i) -> Data.from(x, (int) i))
+            .toArray(Data[]::new);
+    }
+
     private static int[] getRandomData(int size) {
         return ThreadLocalRandom.current().ints(size).toArray();
     }
@@ -71,7 +79,7 @@ public abstract class AbstractSortTester {
 
     public static void assertSorts(String dataDesc, SortAlgo algo, int[] data) {
         String fullId = "data=" + dataDesc + ",algo=" + algo.getName();
-        int[] output = data.clone();
+        Data[] output = index(data);
         AlgoRunner runner = new AlgoRunner(output, algo, v -> {
             if (DEBUG) {
                 System.err.println("Step: " + fullId + ",step=" + v);
@@ -89,9 +97,10 @@ public abstract class AbstractSortTester {
             }
         }
         // sort data using built-in sorts, then compare
-        int[] sorted = data.clone();
-        Arrays.sort(sorted);
-        assertArrayEquals("Incorrect sort: " + fullId, sorted, output);
+        int[] javaSorted = data.clone();
+        Arrays.sort(javaSorted);
+        int[] testSorted = Stream.of(output).mapToInt(Data::value).toArray();
+        assertArrayEquals("Incorrect sort: " + fullId, javaSorted, testSorted);
     }
 
 }

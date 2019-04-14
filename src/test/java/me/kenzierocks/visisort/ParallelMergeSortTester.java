@@ -22,36 +22,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package me.kenzierocks.visisort.op;
+package me.kenzierocks.visisort;
 
-import me.kenzierocks.visisort.Data;
-import me.kenzierocks.visisort.SortOp;
-import me.kenzierocks.visisort.VisiArray;
+import me.kenzierocks.visisort.algo.ParallelMergeSort;
+import org.junit.Test;
 
-public class Swap implements SortOp {
+public class ParallelMergeSortTester extends AbstractSortTester {
 
-    public final VisiArray array;
-    public final int a;
-    public final int b;
-
-    public Swap(VisiArray array, int a, int b) {
-        this.array = array;
-        this.a = a;
-        this.b = b;
-    }
-
-    @Override
-    public Void process() {
-        Data[] data = array.getData();
-        Data swp = data[a];
-        data[a] = data[b];
-        data[b] = swp;
-        return null;
-    }
-
-    @Override
-    public String toString() {
-        return "swap(arrays[" + array + "][" + a + "], arrays[" + array + "][" + b + "])";
+    @Test
+    public void testSorts() throws Exception {
+        assertSorts(ParallelMergeSort::new);
     }
 
 }

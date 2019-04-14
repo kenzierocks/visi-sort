@@ -24,6 +24,7 @@
  */
 package me.kenzierocks.visisort.algo;
 
+import me.kenzierocks.visisort.Data;
 import me.kenzierocks.visisort.SortAlgo;
 import me.kenzierocks.visisort.VisiArray;
 import me.kenzierocks.visisort.op.UncheckedFuture;
@@ -52,10 +53,10 @@ public class QuickSort implements SortAlgo {
     }
 
     private int partition(VisiArray a, int lo, int hi) {
-        int pivot = a.get(hi);
+        Data pivot = a.get(hi);
         int i = lo - 1;
         for (int j = lo; j < hi; j++) {
-            if (a.get(j) < pivot) {
+            if (a.get(j).value() < pivot.value()) {
                 i++;
                 a.swap(i, j);
             }

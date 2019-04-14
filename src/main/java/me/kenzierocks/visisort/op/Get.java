@@ -24,6 +24,7 @@
  */
 package me.kenzierocks.visisort.op;
 
+import me.kenzierocks.visisort.Data;
 import me.kenzierocks.visisort.SortOp;
 import me.kenzierocks.visisort.VisiArray;
 
@@ -38,8 +39,8 @@ public class Get implements SortOp {
     }
 
     @Override
-    public Integer process() {
-        int[] data = array.getData();
+    public Data process() {
+        Data[] data = array.getData();
         return data[index];
     }
 

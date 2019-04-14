@@ -24,6 +24,7 @@
  */
 package me.kenzierocks.visisort.algo;
 
+import me.kenzierocks.visisort.Data;
 import me.kenzierocks.visisort.SortAlgo;
 import me.kenzierocks.visisort.VisiArray;
 
@@ -52,7 +53,7 @@ public class MergeSort implements SortAlgo {
             return data.getSize();
         }
 
-        public int get(int index) {
+        public Data get(int index) {
             return data.get(index);
         }
 
@@ -68,7 +69,7 @@ public class MergeSort implements SortAlgo {
             int indexRight = 0;
             while (indexLeft < left.size() && indexRight < right.size()) {
 
-                int append;
+                Data append;
                 if (left.data.compare(indexLeft, right.data, indexRight) <= 0) {
                     append = left.get(indexLeft);
                     indexLeft++;

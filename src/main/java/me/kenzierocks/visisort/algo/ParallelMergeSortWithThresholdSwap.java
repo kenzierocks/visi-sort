@@ -24,6 +24,7 @@
  */
 package me.kenzierocks.visisort.algo;
 
+import me.kenzierocks.visisort.Data;
 import me.kenzierocks.visisort.SortAlgo;
 import me.kenzierocks.visisort.VisiArray;
 import me.kenzierocks.visisort.op.UncheckedFuture;
@@ -68,7 +69,7 @@ public class ParallelMergeSortWithThresholdSwap implements SortAlgo {
             int indexRight = 0;
             while (indexLeft < left.getSize() && indexRight < right.getSize()) {
 
-                int append;
+                Data append;
                 if (left.compare(indexLeft, right, indexRight) <= 0) {
                     append = left.get(indexLeft);
                     indexLeft++;
