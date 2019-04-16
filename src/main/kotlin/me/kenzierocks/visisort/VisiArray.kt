@@ -24,6 +24,8 @@ data class VisiArray(
             get() = oldArray.data[index]
 
         override fun toString() = "<$oldArray[$index] (=${value.value})>"
+
+        fun asOldArrayRef() = copy(array = oldArray)
     }
 
     fun ref(index: Int) = Ref(this, index)

@@ -24,9 +24,10 @@
  */
 package me.kenzierocks.visisort
 
+import com.flowpowered.math.TrigMath
 import com.flowpowered.math.vector.Vector2d
+import com.flowpowered.math.vector.Vector2f
 import com.flowpowered.math.vector.Vector2i
-import com.google.common.collect.ImmutableListMultimap
 import com.google.common.eventbus.Subscribe
 import com.techshroom.unplanned.blitter.pen.DigitalPen
 import com.techshroom.unplanned.core.util.Color
@@ -40,10 +41,14 @@ import com.techshroom.unplanned.window.WindowSettings
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
+import me.kenzierocks.visisort.math.angle
 import org.jcolorbrewer.ColorBrewer
 import org.lwjgl.glfw.GLFW.glfwSetWindowRefreshCallback
 import java.util.concurrent.TimeUnit
+import kotlin.math.min
 
 class VisiSort(private val algo: SortAlgo) {
 
@@ -59,6 +64,7 @@ class VisiSort(private val algo: SortAlgo) {
         window.eventBus.register(this)
     }
 
+    @UseExperimental(ExperimentalCoroutinesApi::class)
     suspend fun run(data: MutableList<Data>) {
         val ctx = window.graphicsContext
         ctx.makeActiveContext()
@@ -84,23 +90,26 @@ class VisiSort(private val algo: SortAlgo) {
             ctx.clearGraphicsState()
             window.processEvents()
 
+            var extraDelay = 0L
+
             ctx.pen.uncap()
             ctx.pen.scale(scale)
             drawArray(runner.arrays)
+            needsRedraw = !operationInput.isEmpty
+            while (true) {
+                val next = operationInput.poll() ?: break
+                extraDelay += drawOperation(next, runner.arrays)
+            }
             if (running) {
                 running = runner.pulse()
                 if (!running) {
                     startTime = java.lang.Long.MAX_VALUE
                 }
             }
-            while (true) {
-                val next = operationInput.poll() ?: break
-                drawOperation(next.op)
-            }
             ctx.pen.cap()
 
             ctx.swapBuffers()
-            needsRedraw = false
+            delay(extraDelay)
 
             if (!running) {
                 // save frames
@@ -131,29 +140,40 @@ class VisiSort(private val algo: SortAlgo) {
         }
     }
 
-    private fun drawArray(arrays: List<VisiArray>) {
+    private fun drawArray(arrays: Map<String, VisiArray>) {
         if (arrays.isEmpty()) {
             return
         }
         val pen = window.graphicsContext.pen
-        val byLevel = collectByLevel(arrays)
-        val size = arrays[0].data.size
-        val arrayHeight = (SIZE.y - BORDER_Y * 2) / byLevel.keySet().size.toFloat()
-        for (i in byLevel.keySet()) {
-            for (va in byLevel.get(i)) {
-                drawLevel(arrayHeight, (arrayHeight + 1) * i, va.offset, size, va.data)
-            }
-            pen.color = Color.RED
-            pen.fill { pen.rect(0f, (arrayHeight + 1) * i - 1, SIZE.x.toFloat(), 1f) }
+        val size = arrays.values.first { it.level == 0 }.data.size
+        val levels = arrays.values.map { it.level }.distinct()
+        val arrayHeight = (SIZE.y - BORDER_Y * 2) / levels.size.toFloat()
+        for (array in arrays.values) {
+            drawLevel(arrayHeight, (arrayHeight + 1) * array.level, array.offset, size, array.data)
+        }
+        pen.color = Color.RED
+        for (level in levels) {
+            pen.fill { pen.rect(0f, (arrayHeight + 1) * level - 1, SIZE.x.toFloat(), 1f) }
         }
     }
 
-    private fun collectByLevel(arrays: List<VisiArray>): ImmutableListMultimap<Int, VisiArray> {
-        val levels = ImmutableListMultimap.builder<Int, VisiArray>()
-        for (array in arrays) {
-            levels.put(array.level, array)
-        }
-        return levels.build()
+    private fun barWidth(fullSize: Int) =
+            (SIZE.x - BORDER_X * 2 - SEPARATION_X * fullSize) / fullSize.toFloat()
+
+    private fun barHeight(allocatedHeight: Float, fullSize: Int) =
+            allocatedHeight / fullSize.toFloat()
+
+    private fun boxULCorner(allocatedHeight: Float,
+                            fullSize: Int,
+                            offset: Int,
+                            offsetY: Float,
+                            datum: Data): Vector2f {
+        val barWidth = barWidth(fullSize)
+        val barHeight = barHeight(allocatedHeight, fullSize)
+        return Vector2f.from(
+                BORDER_X + (SEPARATION_X + barWidth) * offset,
+                allocatedHeight + offsetY - barHeight - (BORDER_Y + barHeight * datum.value)
+        )
     }
 
     private fun drawLevel(allocatedHeight: Float,
@@ -161,29 +181,88 @@ class VisiSort(private val algo: SortAlgo) {
                           offset: Int,
                           fullSize: Int,
                           data: List<Data>) {
-        val barWidth = (SIZE.x - BORDER_X * 2 - SEPARATION_X * fullSize) / fullSize.toFloat()
-        val barHeight = allocatedHeight / fullSize.toFloat()
         // assume array represents colors
         val pen = window.graphicsContext.pen
         for (i in data.indices) {
             val datum = data[i]
             pen.color = COLORS[datum.originalIndex % COLORS.size]
             pen.fill {
-                val x = BORDER_X + (SEPARATION_X + barWidth) * (offset + i)
-                val y = allocatedHeight + offsetY - barHeight - (BORDER_Y + barHeight * datum.value)
-                pen.rect(x, y, barWidth, barHeight)
+                val xy = boxULCorner(allocatedHeight, fullSize, offset + i, offsetY, datum)
+                pen.rect(xy.x, xy.y, barWidth(fullSize), barHeight(allocatedHeight, fullSize))
             }
         }
     }
 
-    private interface OpDraw<O : Op<*>> {
+    private fun findBoxCenter(arrays: Map<String, VisiArray>, ref: VisiArray.Ref): Vector2f {
+        val size = arrays.values.first { it.level == 0 }.data.size
+        val levels = arrays.values.map { it.level }.distinct()
+        val arrayHeight = (SIZE.y - BORDER_Y * 2) / levels.size.toFloat()
 
-        fun draw(pen: DigitalPen, op: O)
-
+        return boxULCorner(arrayHeight, size,
+                ref.array.offset + ref.index,
+                (arrayHeight + 1) * ref.array.level,
+                ref.value)
+                .add(barWidth(size) / 2, barHeight(arrayHeight, size) / 2)
     }
 
-    private fun drawOperation(nextOp: Op<*>) {
-//        opDraw.draw(window.graphicsContext.pen, )
+    private fun DigitalPen.drawLinePointer(from: Vector2f, to: Vector2f, width: Float) {
+        fill {
+            val angle = from.sub(to).angle() + TrigMath.PI
+            // move back along the line from `from` to `to` `width` px
+            val backMidpoint = to.sub(Vector2f.createDirectionRad(angle).mul(width))
+            // now move perpendicular to that to get the actual triangle points
+            val leftPoint = backMidpoint.add(
+                    Vector2f.createDirectionRad(angle + TrigMath.HALF_PI).mul(width / 2))
+            val rightPoint = backMidpoint.add(
+                    Vector2f.createDirectionRad(angle - TrigMath.HALF_PI).mul(width / 2))
+
+            moveTo(to.x, to.y)
+            lineTo(leftPoint.x, leftPoint.y)
+            lineTo(rightPoint.x, rightPoint.y)
+            closePath()
+        }
+    }
+
+    private fun drawOperation(opResult: OpResult<*>, arrays: Map<String, VisiArray>): Long {
+        val pen = window.graphicsContext.pen
+        return when (val op = opResult.op) {
+            is Op.Idle, is Op.Fork, is Op.Slice, is Op.Get, is Op.Set -> 0L
+            is Op.Swap -> {
+                val centerA = findBoxCenter(arrays, op.array.ref(op.a))
+                val centerB = findBoxCenter(arrays, op.array.ref(op.b))
+                val arrowWidth = min(0.05f * centerA.distance(centerB), 100f)
+
+                with(pen) {
+                    pen.color = Color.BLUE
+                    fill {
+                        lineBetween(centerA.x, centerA.y, centerB.x, centerB.y)
+                    }
+                    drawLinePointer(centerA, centerB, arrowWidth)
+                    drawLinePointer(centerB, centerA, arrowWidth)
+                }
+
+                150L
+            }
+            is Op.Compare -> {
+                val centerA = findBoxCenter(arrays, op.a.asOldArrayRef())
+                val centerB = findBoxCenter(arrays, op.b.asOldArrayRef())
+                val arrowWidth = min(0.05f * centerA.distance(centerB), 100f)
+
+                with(pen) {
+                    pen.color = when {
+                        (opResult.result as Int == 1) -> Color.GREEN
+                        else -> Color.RED
+                    }
+                    fill {
+                        lineBetween(centerA.x, centerA.y, centerB.x, centerB.y)
+                    }
+                    drawLinePointer(centerA, centerB, arrowWidth)
+                    drawLinePointer(centerB, centerA, arrowWidth)
+                }
+
+                150L
+            }
+        }
     }
 
     companion object {

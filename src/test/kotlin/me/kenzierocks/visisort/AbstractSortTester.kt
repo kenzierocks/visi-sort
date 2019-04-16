@@ -102,7 +102,7 @@ abstract class AbstractSortTester {
                     }
                     if (DEBUG) {
                         LOGGER.debug("About to pulse, state is as follows")
-                        runner.arrays.forEach { array ->
+                        runner.arrays.values.forEach { array ->
                             LOGGER.debug("$array = ${array.data.map { it.value }}")
                         }
                     }

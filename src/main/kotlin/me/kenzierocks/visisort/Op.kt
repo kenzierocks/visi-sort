@@ -43,27 +43,27 @@ sealed class Op<R> {
     }
 
     data class Fork(val array: VisiArray, val algo: SortAlgo) : Op<CoroutineContext>() {
-        private val oldArray = array.copy()
+        val oldArray = array.copy()
         override fun toReadableAction(result: CoroutineContext) = "fork($oldArray, ${algo.name}) -> ${result[CoroutineName.Key]?.name}"
     }
 
     data class Get(val array: VisiArray, val index: Int) : Op<Data>() {
-        private val oldArray = array.copy()
+        val oldArray = array.copy()
         override fun toReadableAction(result: Data) = "$oldArray[$index] -> ${result.value}"
     }
 
     data class Set(val array: VisiArray, val index: Int, val value: Data) : Op<Unit>() {
-        private val oldArray = array.copy()
+        val oldArray = array.copy()
         override fun toReadableAction(result: Unit) = "$oldArray[$index] = ${value.value}"
     }
 
     data class Slice(val array: VisiArray, val range: IntRange) : Op<VisiArray>() {
-        private val oldArray = array.copy()
+        val oldArray = array.copy()
         override fun toReadableAction(result: VisiArray) = "$oldArray[$range] -> $result"
     }
 
     data class Swap(val array: VisiArray, val a: Int, val b: Int) : Op<Unit>() {
-        private val oldArray = array.copy()
+        val oldArray = array.copy()
         override fun toReadableAction(result: Unit) = "$oldArray.swap($a (=${oldArray.data[a].value}), $b (=${oldArray.data[b].value}))"
     }
 }

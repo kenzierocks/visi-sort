@@ -41,17 +41,14 @@ class ShellSort : SortAlgo {
     override suspend fun OpChannel.sort(array: VisiArray) {
         for (gap in GAPS) {
             for (i in gap until array.size) {
-                val tmp = array.get(i)
                 var j = i
                 while (j >= gap) {
-                    val value = array.get(j - gap)
-                    if (value.value <= tmp.value) {
+                    if (compare(array.ref(j - gap), array.ref(j)) <= 0) {
                         break
                     }
-                    array.set(j, value)
+                    array.swap(j - gap, j)
                     j -= gap
                 }
-                array.set(j, tmp)
             }
         }
     }

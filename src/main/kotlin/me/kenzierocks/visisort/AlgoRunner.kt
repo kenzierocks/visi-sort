@@ -26,13 +26,13 @@ class AlgoRunner(
 
     private val ids = IdTracker("Task")
     private val tasks = mutableListOf<Task>()
-    private val arraysInternal = mutableListOf<VisiArray>()
+    private val arraysInternal = mutableMapOf<String, VisiArray>()
 
-    val arrays: List<VisiArray> = arraysInternal
+    val arrays: Map<String, VisiArray> = arraysInternal
 
     fun start() {
         val array = VisiArray(0, 0, output)
-        arraysInternal.add(array)
+        arraysInternal[array.id] = array
         launch(array, sortAlgo)
     }
 
@@ -93,7 +93,7 @@ class AlgoRunner(
             is Op.Slice -> {
                 val newArray = it.array.data.slice(it.range).toMutableList()
                 val visiArray = VisiArray(it.array.level + 1, it.array.offset + it.range.first, newArray)
-                arraysInternal.add(visiArray)
+                arraysInternal[visiArray.id] = visiArray
                 visiArray
             }
             is Op.Swap -> {
