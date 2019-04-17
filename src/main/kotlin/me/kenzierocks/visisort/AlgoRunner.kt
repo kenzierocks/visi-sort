@@ -18,7 +18,6 @@ class AlgoRunner(
 ) {
     private class Task(
             val id: String,
-            val array: VisiArray,
             val channel: OpChannel
     ) {
         override fun toString() = id
@@ -48,7 +47,7 @@ class AlgoRunner(
                 channel.close()
             }
         }
-        tasks.add(Task(id, array, channel))
+        tasks.add(Task(id, channel))
         return job
     }
 
@@ -89,7 +88,7 @@ class AlgoRunner(
             is Op.Compare -> Integer.compare(it.a.value.value, it.b.value.value)
             is Op.Fork -> launch(it.array, it.algo)
             is Op.Get -> it.array.data[it.index]
-            is Op.Set -> it.array.data[it.index] = it.value
+            is Op.Copy -> it.to.array.data[it.to.index] = it.from.value
             is Op.Slice -> {
                 val newArray = it.array.data.slice(it.range).toMutableList()
                 val visiArray = VisiArray(it.array.level + 1, it.array.offset + it.range.first, newArray)

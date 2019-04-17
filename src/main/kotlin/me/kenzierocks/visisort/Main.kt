@@ -34,7 +34,6 @@ import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Runnable
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.launch
 import me.kenzierocks.visisort.algo.BogoSort
 import me.kenzierocks.visisort.algo.BubbleSort
 import me.kenzierocks.visisort.algo.InsertionSort
@@ -113,6 +112,8 @@ object Main {
     private val HELP = PARSER.acceptsAll(asList("h", "help"), "Show this help")
             .forHelp()
 
+    private val WAIT_FOR_CLICK = PARSER.acceptsAll(asList("c", "wait-for-click"), "Wait for a screen click before starting")
+
     private val SORT_ALGO = PARSER.acceptsAll(asList("a", "algorithm"), "Sort algorithm")
             .withRequiredArg()
             .withValuesConvertedBy(SORT_ALGO_CONVERTER)
@@ -151,6 +152,7 @@ object Main {
             return
         }
 
+        val waitForClick = opts.has(WAIT_FOR_CLICK)
         var sort = SORT_ALGO.value(opts)
         if (opts.has(WRAPPING_SORT_ALGO)) {
             sort = WRAPPING_SORT_ALGO.value(opts).wrap(sort, THRESHOLD.value(opts))
@@ -164,11 +166,11 @@ object Main {
                 SupervisorJob() + NormalMainDispatcher(queue, Thread.currentThread())
                         + CoroutineName("Main routine")
         )
-        val mainRoutine = scope.launch {
-            visi.run(getVisiData(DATA_LENGTH.value(opts)))
+        val jobs = with(visi) {
+            scope.run(getVisiData(DATA_LENGTH.value(opts)), waitForClick)
         }
 
-        while (!mainRoutine.isCompleted) {
+        while (!jobs.all { it.isCompleted }) {
             queue.take().run()
         }
     }

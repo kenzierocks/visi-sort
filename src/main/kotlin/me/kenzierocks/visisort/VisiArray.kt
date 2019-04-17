@@ -1,6 +1,8 @@
 package me.kenzierocks.visisort
 
-data class VisiArray(
+import java.util.Objects
+
+class VisiArray(
         /**
          * Level of the array. Starts at 0, higher is further down.
          */
@@ -21,14 +23,32 @@ data class VisiArray(
     data class Ref(val array: VisiArray, val index: Int) {
         private val oldArray = array.copy()
         val value: Data
-            get() = oldArray.data[index]
+            get() = array.data[index]
 
-        override fun toString() = "<$oldArray[$index] (=${value.value})>"
+        override fun toString() = "<$array[$index] (=${value.value})>"
 
         fun asOldArrayRef() = copy(array = oldArray)
+
+        override fun equals(other: Any?): Boolean {
+            if (this === other) {
+                return true
+            }
+            return when (other) {
+                is Ref -> array.id == other.array.id && index == other.index
+                else -> false
+            }
+        }
+
+        override fun hashCode(): Int {
+            return Objects.hash(array.id, index)
+        }
     }
 
     fun ref(index: Int) = Ref(this, index)
+
+    fun copy() = VisiArray(
+            level, offset, data.toMutableList(), id
+    )
 
     override fun toString() = id
 

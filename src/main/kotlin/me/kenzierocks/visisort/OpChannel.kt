@@ -49,8 +49,8 @@ class OpChannel {
     suspend fun VisiArray.get(index: Int): Data =
             performOp(Op.Get(this, index))
 
-    suspend fun VisiArray.set(index: Int, value: Data) =
-            performOp(Op.Set(this, index, value))
+    suspend fun copy(from: VisiArray.Ref, to: VisiArray.Ref) =
+            performOp(Op.Copy(from, to))
 
     suspend fun compare(a: VisiArray.Ref, b: VisiArray.Ref) =
             performOp(Op.Compare(a, b))

@@ -55,7 +55,7 @@ class QuickSortWithThresholdSwap(
                     sort(data)
                 }
                 for (i in 0 until data.size) {
-                    A.set(i + lo, data.get(i))
+                    copy(data.ref(i), A.ref(i + lo))
                 }
                 return
             }

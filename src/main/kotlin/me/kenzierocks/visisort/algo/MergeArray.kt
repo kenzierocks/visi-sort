@@ -36,26 +36,26 @@ abstract class MergeArray constructor(val data: VisiArray) {
             var indexRight = 0
             while (indexLeft < left.size && indexRight < right.size) {
 
-                val append: Data
+                val append: VisiArray.Ref
                 if (compare(left.data.ref(indexLeft), right.data.ref(indexRight)) <= 0) {
-                    append = left.data.get(indexLeft)
+                    append = left.data.ref(indexLeft)
                     indexLeft++
                 } else {
-                    append = right.data.get(indexRight)
+                    append = right.data.ref(indexRight)
                     indexRight++
                 }
-                data.set(index, append)
+                copy(append, data.ref(index))
                 index++
             }
 
             while (indexLeft < left.size) {
-                data.set(index, left.data.get(indexLeft))
+                copy(left.data.ref(indexLeft), data.ref(index))
                 indexLeft++
                 index++
             }
 
             while (indexRight < right.size) {
-                data.set(index, right.data.get(indexRight))
+                copy(right.data.ref(indexRight), data.ref(index))
                 indexRight++
                 index++
             }

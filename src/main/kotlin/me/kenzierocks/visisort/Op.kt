@@ -52,9 +52,9 @@ sealed class Op<R> {
         override fun toReadableAction(result: Data) = "$oldArray[$index] -> ${result.value}"
     }
 
-    data class Set(val array: VisiArray, val index: Int, val value: Data) : Op<Unit>() {
-        val oldArray = array.copy()
-        override fun toReadableAction(result: Unit) = "$oldArray[$index] = ${value.value}"
+    data class Copy(val from: VisiArray.Ref, val to: VisiArray.Ref) : Op<Unit>() {
+        override fun toReadableAction(result: Unit) =
+                "${to.asOldArrayRef().array}[${to.index}] = ${from.asOldArrayRef()}"
     }
 
     data class Slice(val array: VisiArray, val range: IntRange) : Op<VisiArray>() {
